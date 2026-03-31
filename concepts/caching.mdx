@@ -1,0 +1,79 @@
+---
+title: "Caching"
+description: "How Stophy caches responses to improve performance"
+---
+
+Stophy caches API responses to reduce latency and avoid redundant upstream fetches. There are two distinct cache layers depending on the endpoint.
+
+<Tip>
+Cache hits return identical data to a live fetch but complete faster because no upstream call is made. Your integration benefits from lower response times without any extra configuration.
+</Tip>
+
+## Cache layers
+
+### Redis (video details and comments)
+
+Video details and video comments are cached in Redis (Upstash) with a **1-hour TTL**. After the TTL expires the entry is evicted, and the next request fetches fresh data from YouTube and repopulates the cache.
+
+| Endpoint | Cache key | TTL |
+| --- | --- | --- |
+| Video details | `video:details:{videoId}` | 1 hour |
+| Video comments | `video:comments:v2:{videoId}:{filter_json}` | 1 hour |
+
+The comments cache key includes the full filter object as JSON, so different sort orders and pagination tokens each have their own independent cache entry. For example:
+
+```
+video:comments:v2:dQw4w9WgXcQ:{"continuationToken":"","sortBy":"top"}
+video:comments:v2:dQw4w9WgXcQ:{"continuationToken":"","sortBy":"newest"}
+```
+
+### PostgreSQL (transcripts)
+
+Transcripts are persisted in the `video_transcript` table rather than Redis. There is no TTL — once a transcript is stored it remains available indefinitely.
+
+The cache key is the unique pair `(videoId, languageCode)`. If a transcript is re-fetched (for example, after a source update) the existing row is updated via an upsert:
+
+```sql
+INSERT INTO video_transcript (video_id, language_code, full_text, segments)
+VALUES (...)
+ON CONFLICT (video_id, language_code)
+DO UPDATE SET full_text = EXCLUDED.full_text, segments = EXCLUDED.segments
+```
+
+## Cache status in responses
+
+Every successful response includes a `cacheStatus` field indicating whether the data was served from cache.
+
+```json
+{
+  "statusCode": 200,
+  "cacheStatus": "hit",
+  "creditUsed": 1,
+  "remainingCredits": 84,
+  "video": { ... }
+}
+```
+
+`cacheStatus` is either `"hit"` or `"miss"`.
+
+<Info>
+Cache hits still cost **1 credit**. Credits are charged for every successful response, regardless of whether the data came from cache or was fetched live from YouTube.
+</Info>
+
+## Example: cache hit response
+
+```json
+{
+  "statusCode": 200,
+  "cacheStatus": "hit",
+  "creditUsed": 1,
+  "remainingCredits": 42,
+  "transcript": {
+    "plainText": "Welcome back to the channel...",
+    "transcript": [
+      { "text": "Welcome back to the channel", "start": 0.0, "duration": 2.5 },
+      { "text": "Today we're going to cover", "start": 2.5, "duration": 1.8 }
+    ]
+  }
+}
+```

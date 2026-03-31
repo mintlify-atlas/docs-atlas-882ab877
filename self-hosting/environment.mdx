@@ -1,0 +1,132 @@
+---
+title: "Environment variables"
+description: "All required environment variables for Stophy."
+---
+
+Stophy reads configuration exclusively from environment variables, validated at startup using Zod. If any variable is missing or invalid, the process will exit with an error before accepting requests.
+
+Create a `.env` file in the project root:
+
+```bash
+touch .env
+```
+
+<Warning>
+  Never commit your `.env` file to version control. Add it to `.gitignore` immediately. It contains secrets including your database connection string, Redis token, and external API key.
+</Warning>
+
+## All variables
+
+All variables listed below are **required**. There are no optional fields.
+
+| Variable | Type | Description |
+|---|---|---|
+| `PORT` | integer | The port the server listens on |
+| `SERVER_URL` | URL | The public URL of your server |
+| `PROXY_URL` | URL | Proxy URL used for outbound HTTP requests |
+| `UPSTASH_REDIS_REST_URL` | URL | Upstash Redis REST endpoint |
+| `UPSTASH_REDIS_REST_TOKEN` | string | Auth token for the Upstash Redis database |
+| `DATABASE_URL` | URL | PostgreSQL connection URL |
+| `TRANSCRIPT_ENDPOINT` | URL | External transcript service endpoint |
+| `TRANSCRIPT_API_KEY` | string | API key for the external transcript service |
+
+## Variable reference
+
+### `PORT`
+
+The port on which the Express server listens. Must be a positive integer.
+
+```env
+PORT=3000
+```
+
+---
+
+### `SERVER_URL`
+
+The public base URL of your deployed server. Used for constructing absolute URLs internally.
+
+```env
+SERVER_URL=https://api.example.com
+```
+
+---
+
+### `PROXY_URL`
+
+A proxy URL applied to outbound HTTP requests made by the server (for example, requests to YouTube or the transcript service). Must be a valid URL including protocol and port.
+
+```env
+PROXY_URL=http://proxy.example.com:8080
+```
+
+---
+
+### `UPSTASH_REDIS_REST_URL`
+
+The REST API endpoint for your Upstash Redis database. Found in the Upstash console under your database's **REST API** section.
+
+```env
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+```
+
+---
+
+### `UPSTASH_REDIS_REST_TOKEN`
+
+The authentication token for the Upstash Redis REST API. Found alongside `UPSTASH_REDIS_REST_URL` in the Upstash console.
+
+```env
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+```
+
+---
+
+### `DATABASE_URL`
+
+A PostgreSQL connection URL. Stophy uses `@neondatabase/serverless` to connect, so the Neon connection string format works directly.
+
+```env
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+```
+
+<Note>
+  [Neon](https://neon.tech) is the recommended PostgreSQL provider. It provides a serverless PostgreSQL instance with a compatible connection URL and works out of the box with the `@neondatabase/serverless` driver used by Stophy.
+</Note>
+
+---
+
+### `TRANSCRIPT_ENDPOINT`
+
+The base URL of the external service used to fetch YouTube transcripts. This must be a reachable URL from your server.
+
+```env
+TRANSCRIPT_ENDPOINT=https://transcript-service.example.com
+```
+
+---
+
+### `TRANSCRIPT_API_KEY`
+
+The API key used to authenticate requests to the transcript service defined by `TRANSCRIPT_ENDPOINT`.
+
+```env
+TRANSCRIPT_API_KEY=your-transcript-api-key
+```
+
+---
+
+## `.env.example`
+
+Copy this block into a `.env.example` file to share configuration requirements with your team without exposing real secrets:
+
+```env
+PORT=3000
+SERVER_URL=https://api.example.com
+PROXY_URL=http://proxy.example.com:8080
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+TRANSCRIPT_ENDPOINT=https://transcript-service.example.com
+TRANSCRIPT_API_KEY=your-transcript-api-key
+```

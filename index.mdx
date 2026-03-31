@@ -1,97 +1,60 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Stophy"
+description: "A credit-based REST API for extracting YouTube video transcripts, details, and comments — with built-in caching and API key authentication."
 ---
 
-## Setting up
+Stophy gives developers a simple, reliable HTTP API to extract data from YouTube videos. Fetch transcripts in any available language, retrieve rich video metadata, or paginate through comments — all protected by API key auth and backed by intelligent Redis caching to minimize latency and credit usage.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Make your first API call in minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Authentication" icon="key" href="/authentication">
+    Learn how to use your API key
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all endpoints and parameters
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Credits & Billing" icon="coins" href="/concepts/credits">
+    Understand how credits are consumed
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What you can do
 
-Everything you need to create world-class documentation.
+<CardGroup cols={3}>
+  <Card title="Transcripts" icon="closed-captioning" href="/api-reference/video/transcript">
+    Extract full video transcripts with timestamps in any available language
+  </Card>
+  <Card title="Video Details" icon="film" href="/api-reference/video/details">
+    Retrieve metadata: title, description, views, likes, chapters, and related videos
+  </Card>
+  <Card title="Comments" icon="comments" href="/api-reference/video/comments">
+    Paginate through comments sorted by top or newest
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## How it works
 
-## Need inspiration?
+<Steps>
+  <Step title="Get your API key">
+    Create an account and generate an API key from your dashboard. Each key is tied to your credit balance.
+  </Step>
+  <Step title="Make a request">
+    Call any endpoint with your API key in the `x-api-key` header and a YouTube video URL in the request body.
+  </Step>
+  <Step title="Receive structured data">
+    Get back clean, structured JSON — transcripts as plain text and timed segments, video metadata, or paginated comments.
+  </Step>
+  <Step title="Monitor your usage">
+    Each successful request deducts 1 credit. Cached responses still cost 1 credit but return instantly.
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Key features
+
+- **Multi-language transcripts** — request transcripts in any language code (e.g., `en`, `es`, `fr`)
+- **Smart caching** — Redis-backed cache means repeat requests return in milliseconds
+- **Atomic credit deductions** — race-condition-safe credit management ensures you're never overcharged
+- **Activity logging** — every request is logged with status, response time, and credits used
+- **Simple auth** — pass your API key in the `x-api-key` or `api-x-key` header

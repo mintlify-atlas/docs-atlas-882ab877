@@ -1,0 +1,99 @@
+---
+title: "API overview"
+description: "Base URL, versioning, request format, and response format"
+---
+
+## Base URL
+
+All video endpoints are prefixed with `/v1/video`:
+
+```
+/v1/video/transcript
+/v1/video/details
+/v1/video/comments
+```
+
+The API is self-hosted, so the base URL depends on where you deploy Stophy. Replace `https://your-stophy-host` in all examples with your actual host.
+
+## Versioning
+
+The current API version is **v1**. The version prefix is part of the URL path.
+
+## Request format
+
+All requests must include the `Content-Type: application/json` header. The request body must be valid JSON.
+
+```http
+POST /v1/video/transcript HTTP/1.1
+Content-Type: application/json
+api-x-key: YOUR_API_KEY
+
+{
+  "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+}
+```
+
+## Response format
+
+Every response returns a JSON object with a `statusCode` field at the top level:
+
+```json
+{
+  "statusCode": 200,
+  ...
+}
+```
+
+Error responses include a `message` field:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Video URL is required"
+}
+```
+
+Successful responses include `statusCode`, `cacheStatus`, `creditUsed`, `remainingCredits`, and the requested data.
+
+## Available endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health check — returns `{ "statusCode": 200, "message": "OK" }` |
+| `POST` | `/v1/video/transcript` | Fetch the transcript for a YouTube video |
+| `POST` | `/v1/video/details` | Fetch metadata and details for a YouTube video |
+| `POST` | `/v1/video/comments` | Fetch comments for a YouTube video |
+
+<Note>
+  Authentication is required for all `/v1/video` endpoints. Requests without a valid API key are rejected before any processing or credit deduction occurs. The `/health` endpoint does not require authentication.
+</Note>
+
+## Supported YouTube URL formats
+
+All three video endpoints accept a `videoUrl` field in the request body. The following YouTube URL formats are supported:
+
+| Format | Example |
+|--------|---------|
+| Standard watch URL | `https://www.youtube.com/watch?v=VIDEO_ID` |
+| Embed URL | `https://www.youtube.com/embed/VIDEO_ID` |
+| Shorts URL | `https://www.youtube.com/shorts/VIDEO_ID` |
+| Shortened URL | `https://youtu.be/VIDEO_ID` |
+
+Any other URL format — including non-YouTube URLs — returns a `400 Bad Request` error. See [error codes](/api-reference/errors) for the full list of URL validation errors.
+
+## Explore endpoints
+
+<CardGroup cols={2}>
+  <Card title="Transcript" icon="file-lines" href="/api-reference/video/transcript">
+    Extract the full transcript from a YouTube video
+  </Card>
+  <Card title="Details" icon="circle-info" href="/api-reference/video/details">
+    Fetch title, description, and metadata for a video
+  </Card>
+  <Card title="Comments" icon="comments" href="/api-reference/video/comments">
+    Retrieve comments with pagination and sort options
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    How to authenticate your API requests
+  </Card>
+</CardGroup>

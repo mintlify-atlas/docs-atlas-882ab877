@@ -1,0 +1,121 @@
+---
+title: "Setup"
+description: "Run Stophy on your own infrastructure."
+---
+
+This guide walks you through cloning, configuring, and running Stophy on your own server.
+
+<Note>
+  Stophy uses `pnpm@10.12.4` as its package manager. Install it with `npm install -g pnpm@10.12.4` before continuing.
+</Note>
+
+<Steps>
+  <Step title="Prerequisites">
+    Make sure you have the following available before starting:
+
+    - **Node.js** — v18 or later recommended
+    - **pnpm** — version 10.12.4 (see note above)
+    - **PostgreSQL** — a running PostgreSQL database (Neon serverless is recommended; see [Database](/self-hosting/database))
+    - **Upstash Redis** — an Upstash account with a Redis database for response caching
+  </Step>
+
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/hakiiizimana/stophy.git
+    cd stophy
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    <CodeGroup>
+
+    ```bash pnpm
+    pnpm install
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env` file in the project root and populate it with all required variables. See [Environment variables](/self-hosting/environment) for the full list and descriptions.
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Open `.env` and fill in every value before proceeding.
+  </Step>
+
+  <Step title="Run database migrations">
+    Apply your schema to the database. Choose the command that matches your environment:
+
+    <CodeGroup>
+
+    ```bash Development (push directly)
+    pnpm db:push
+    ```
+
+    ```bash Production (run migrations)
+    pnpm db:migrate
+    ```
+
+    </CodeGroup>
+
+    `pnpm db:push` applies schema changes directly and is faster for local iteration. Use `pnpm db:migrate` in production to apply versioned migration files. See [Database](/self-hosting/database) for details.
+  </Step>
+
+  <Step title="Start the development server">
+    ```bash
+    pnpm dev
+    ```
+
+    This runs `nodemon`, which watches `src/**/*.ts` and restarts automatically on changes using `ts-node`. The server listens on the port defined by `PORT` in your `.env`.
+
+    Verify the server is running:
+
+    ```bash
+    curl http://localhost:${PORT}/health
+    ```
+
+    A successful response looks like:
+
+    ```json
+    { "statusCode": 200, "message": "OK" }
+    ```
+  </Step>
+
+  <Step title="Build for production">
+    Compile TypeScript to JavaScript, then start the compiled output:
+
+    <CodeGroup>
+
+    ```bash Build
+    pnpm build
+    ```
+
+    ```bash Start
+    pnpm start
+    ```
+
+    </CodeGroup>
+
+    `pnpm build` runs `tsc` and emits compiled files to `./dist`. `pnpm start` runs `node dist/server.js`.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Environment variables" icon="sliders" href="/self-hosting/environment">
+    Full reference for every required environment variable
+  </Card>
+  <Card title="Database" icon="database" href="/self-hosting/database">
+    Schema overview and migration commands
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    How to authenticate API requests with your key
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all endpoints, parameters, and responses
+  </Card>
+</CardGroup>

@@ -1,0 +1,141 @@
+---
+title: "Error handling"
+description: "Understanding Stophy API error responses"
+---
+
+All Stophy API errors follow a consistent envelope format. Checking the status code and `message` field is enough to identify what went wrong and how to recover.
+
+## Response envelope
+
+Every error response uses the same JSON structure:
+
+```json
+{
+  "statusCode": 402,
+  "message": "Insufficient credits"
+}
+```
+
+Both fields are always present. `statusCode` mirrors the HTTP status code of the response.
+
+## Error codes
+
+<AccordionGroup>
+  <Accordion title="400 — Bad request">
+    The request was rejected before authentication because required input was missing or could not be parsed.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Video URL is required` | The `videoUrl` field was absent or empty in the request body. |
+    | `Unsupported YouTube URL format` | The `videoUrl` value could not be resolved to a valid YouTube video ID. |
+
+    **No credits are charged for `400` responses.**
+
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Video URL is required"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="401 — Unauthorized">
+    The request could not be authenticated.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Missing api-x-key header` | The `api-x-key` (or `x-api-key`) header was not included in the request. |
+    | `Invalid API key` | The provided key does not match any active API key in the database. |
+
+    **No credits are charged for `401` responses.**
+
+    ```json
+    {
+      "statusCode": 401,
+      "message": "Missing api-x-key header"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="402 — Insufficient credits">
+    The authenticated user's credit balance is too low to fulfil the request.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Insufficient credits` | The user's balance is below the cost of 1 credit at the time of the check. |
+
+    **No credits are charged for `402` responses.**
+
+    ```json
+    {
+      "statusCode": 402,
+      "message": "Insufficient credits"
+    }
+    ```
+
+    <Warning>
+      A `402` response means your account has run out of credits. You must top up your balance before further requests will succeed.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="404 — Not found">
+    The request was valid but the requested resource does not exist.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Video not found` | No YouTube video exists for the extracted video ID. |
+    | `Video comments not found` | The video exists but comments could not be retrieved. |
+    | `User not found for API key` | The API key is valid but the associated user account no longer exists. |
+
+    **No credits are charged for `404` responses.**
+
+    ```json
+    {
+      "statusCode": 404,
+      "message": "Video not found"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="409 — Conflict">
+    A concurrent request depleted the user's credit balance between the initial balance check and the atomic deduction.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Credits changed while processing request. Try again.` | The credit deduction failed because the balance changed mid-request. |
+
+    **No credits are charged for `409` responses.**
+
+    ```json
+    {
+      "statusCode": 409,
+      "message": "Credits changed while processing request. Try again."
+    }
+    ```
+
+    <Tip>
+      `409` errors are transient. Retry the request after a short delay (for example, 200 ms). If you consistently receive `409` responses, reduce the number of parallel requests issued against a low credit balance.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="500 — Internal server error">
+    An unexpected error occurred on the server.
+
+    | Message | Cause |
+    | --- | --- |
+    | `Internal server error` | An unhandled exception was thrown during request processing. |
+
+    **No credits are charged for `500` responses.**
+
+    ```json
+    {
+      "statusCode": 500,
+      "message": "Internal server error"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Credits and errors
+
+No credits are deducted for any error response. Credits are only charged when the API returns `200` with the requested data. See [Credits](/concepts/credits) for a full breakdown of when charges apply.

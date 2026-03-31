@@ -1,0 +1,55 @@
+---
+title: "Introduction"
+description: "Stophy is a credit-based REST API for extracting YouTube video transcripts, video details, and comments."
+---
+
+Stophy gives developers a simple HTTP API to extract structured data from YouTube videos. Every request is authenticated with an API key and costs credits — the same 1-credit cost whether the data is freshly fetched or returned from cache.
+
+<Info>
+  All endpoints are mounted under `/v1/video`. Every request requires a valid API key and at least 1 credit.
+</Info>
+
+## Key features
+
+- **Transcripts** — fetch full video transcripts as plain text or timed segments, in any available language
+- **Video details** — retrieve metadata including title, description, view count, likes, chapters, and related videos
+- **Comments** — paginate through video comments sorted by `top` or `newest`, with continuation token support
+- **Credit system** — each successful request costs 1 credit, deducted atomically to prevent race conditions
+- **Response caching** — transcripts are cached in the database; details and comments are cached in Redis, so repeat requests return faster
+
+## How credits work
+
+Every user account starts with a credit balance (default 100 credits). Each successful API call deducts 1 credit from your balance. Credits are never charged for failed requests — if a video is not found or a transcript is unavailable, no credit is deducted.
+
+The response from every endpoint includes `creditUsed` and `remainingCredits` fields so you can track consumption in real time.
+
+<Note>
+  If a request fails due to insufficient credits, the API returns HTTP 402. No credit is deducted.
+</Note>
+
+## How caching works
+
+Transcripts are stored in a PostgreSQL table keyed by video ID and language code. When you request a transcript that has already been fetched, the cached version is returned immediately — still costing 1 credit, but with significantly lower latency.
+
+Details and comments endpoints use Redis-backed caching. The `cacheStatus` field in every response tells you whether data came from cache (`"hit"`) or was freshly fetched (`"miss"`).
+
+<Tip>
+  Repeated requests for the same video and language return from cache. Use `cacheStatus` in the response to distinguish hits from misses.
+</Tip>
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Make your first API call in under 5 minutes
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Learn how to pass your API key in requests
+  </Card>
+  <Card title="Credits" icon="coins" href="/concepts/credits">
+    Understand how credits are consumed and managed
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all endpoints, parameters, and responses
+  </Card>
+</CardGroup>

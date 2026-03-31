@@ -1,0 +1,100 @@
+---
+title: "Get transcript"
+description: "Fetch a YouTube video transcript with timestamps"
+---
+
+**POST** `/v1/video/transcript`
+
+Fetches the transcript for a YouTube video. Transcripts are cached in the database by `(videoId, languageCode)` — repeat requests for the same video and language return from cache instantly.
+
+**Authentication required** · **1 credit per request**
+
+## Request
+
+<ParamField body="videoUrl" type="string" required>
+  The YouTube video URL. Supported formats:
+  - `https://www.youtube.com/watch?v=VIDEO_ID`
+  - `https://youtu.be/VIDEO_ID`
+  - `https://www.youtube.com/shorts/VIDEO_ID`
+  - `https://www.youtube.com/embed/VIDEO_ID`
+</ParamField>
+
+<ParamField body="languageCode" type="string">
+  BCP 47 language code for the transcript language. Defaults to `"en"`.
+</ParamField>
+
+## Response
+
+<ResponseField name="statusCode" type="number">200 on success</ResponseField>
+<ResponseField name="cacheStatus" type="string">`"hit"` or `"miss"`</ResponseField>
+<ResponseField name="creditUsed" type="number">Always `1`</ResponseField>
+<ResponseField name="remainingCredits" type="number">Your credit balance after this request</ResponseField>
+<ResponseField name="transcript" type="object">
+  <Expandable title="properties">
+    <ResponseField name="plainText" type="string">Full transcript as plain text with music notes and bracket annotations stripped</ResponseField>
+    <ResponseField name="transcript" type="TranscriptSegment[]">
+      <Expandable title="TranscriptSegment properties">
+        <ResponseField name="text" type="string">Segment text</ResponseField>
+        <ResponseField name="start" type="number">Start time in seconds</ResponseField>
+        <ResponseField name="duration" type="number">Segment duration in seconds</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash curl
+curl -X POST https://your-api.example.com/v1/video/transcript \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "languageCode": "en"}'
+```
+
+```javascript JavaScript
+const res = await fetch("https://your-api.example.com/v1/video/transcript", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.STOPHY_API_KEY,
+  },
+  body: JSON.stringify({
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    languageCode: "en",
+  }),
+});
+const data = await res.json();
+```
+
+```python Python
+import requests, os
+
+response = requests.post(
+    "https://your-api.example.com/v1/video/transcript",
+    headers={"x-api-key": os.environ["STOPHY_API_KEY"]},
+    json={"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "languageCode": "en"},
+)
+data = response.json()
+```
+</CodeGroup>
+
+```json Response
+{
+  "statusCode": 200,
+  "cacheStatus": "miss",
+  "creditUsed": 1,
+  "remainingCredits": 99,
+  "transcript": {
+    "plainText": "We're no strangers to love You know the rules and so do I",
+    "transcript": [
+      { "text": "We're no strangers to love", "start": 18.08, "duration": 2.5 },
+      { "text": "You know the rules and so do I", "start": 20.58, "duration": 2.8 }
+    ]
+  }
+}
+```
+
+<Note>
+  Transcripts are cached in the database permanently by `(videoId, languageCode)`. Cache hits still cost 1 credit but return much faster.
+</Note>

@@ -1,0 +1,163 @@
+---
+title: "Database"
+description: "Database schema and migration management for Stophy."
+---
+
+Stophy uses PostgreSQL as its primary data store, accessed via [Drizzle ORM](https://orm.drizzle.team). The Drizzle configuration (`drizzle.config.ts`) uses the `postgresql` dialect, with the schema defined in `src/db/schema.ts` and migration files output to `src/db/migrations`.
+
+## Tables
+
+### `user`
+
+Stores registered user accounts. Each user starts with 100 credits.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `name` | text | Required |
+| `email` | text | Required, unique |
+| `email_verified` | boolean | Defaults to `false` |
+| `image` | text | Optional avatar URL |
+| `credits` | integer | Defaults to `100` |
+| `created_at` | timestamp | Set on insert |
+| `updated_at` | timestamp | Set on insert |
+
+---
+
+### `session`
+
+Tracks authenticated user sessions.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `expires_at` | timestamp | Required |
+| `token` | text | Required, unique |
+| `ip_address` | text | Optional |
+| `user_agent` | text | Optional |
+| `user_id` | text | FK → `user.id`, cascade delete |
+| `created_at` | timestamp | Required |
+| `updated_at` | timestamp | Required |
+
+---
+
+### `account`
+
+OAuth provider accounts linked to a user. Supports multiple providers per user.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `account_id` | text | Provider-assigned account ID |
+| `provider_id` | text | Name of the OAuth provider |
+| `user_id` | text | FK → `user.id`, cascade delete |
+| `access_token` | text | Optional |
+| `refresh_token` | text | Optional |
+| `id_token` | text | Optional |
+| `access_token_expires_at` | timestamp | Optional |
+| `refresh_token_expires_at` | timestamp | Optional |
+| `scope` | text | Optional |
+| `password` | text | Optional (for credential-based auth) |
+| `created_at` | timestamp | Required |
+| `updated_at` | timestamp | Required |
+
+---
+
+### `verification`
+
+Stores short-lived tokens for email verification and other challenges.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `identifier` | text | Required (e.g. email address) |
+| `value` | text | Required (the verification token) |
+| `expires_at` | timestamp | Required |
+| `created_at` | timestamp | Defaults to current time |
+| `updated_at` | timestamp | Defaults to current time |
+
+---
+
+### `api_key`
+
+API keys issued to users for authenticating requests.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `name` | text | Required, human-readable label |
+| `key` | text | Required, unique (the full key) |
+| `prefix` | text | Required |
+| `suffix` | text | Required |
+| `is_default` | boolean | Defaults to `false` |
+| `user_id` | text | FK → `user.id`, cascade delete |
+| `created_at` | timestamp | Defaults to current time |
+
+---
+
+### `activity_log`
+
+Audit log of every API request made by a user.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | text | Primary key |
+| `user_id` | text | FK → `user.id`, cascade delete |
+| `api_key_id` | text | Optional, the key used for the request |
+| `endpoint` | text | Required (e.g. `/v1/video/transcript`) |
+| `url` | text | Required (the target video URL) |
+| `status` | text | Required (e.g. `"success"`, `"error"`) |
+| `status_code` | integer | Required HTTP status code |
+| `credits` | integer | Credits charged; defaults to `0` |
+| `response_time_ms` | integer | Optional request duration in milliseconds |
+| `metadata` | jsonb | Optional additional data |
+| `created_at` | timestamp | Defaults to current time |
+
+---
+
+### `video_transcript`
+
+Transcript cache keyed by video ID and language code. There is no surrogate primary key — the combination of `video_id` and `language_code` is enforced as unique via an index.
+
+| Column | Type | Notes |
+|---|---|---|
+| `video_id` | text | Required |
+| `language_code` | text | Required |
+| `full_text` | text | Required, the full transcript as plain text |
+| `segments` | jsonb | Required, array of timed transcript segments |
+| `created_at` | timestamp | Defaults to current time |
+
+**Unique index:** `video_transcript_video_language_unique` on `(video_id, language_code)`.
+
+---
+
+## Migration commands
+
+Stophy provides three database scripts in `package.json`:
+
+| Command | Description |
+|---|---|
+| `pnpm db:push` | Push schema changes directly to the database (no migration files) |
+| `pnpm db:generate` | Generate versioned migration SQL files in `src/db/migrations` |
+| `pnpm db:migrate` | Apply all pending migration files to the database |
+
+<Warning>
+  Use `pnpm db:push` only during local development. It applies schema changes directly without generating migration files, making it impossible to track or roll back changes. In production, use `pnpm db:generate` to create migration files and `pnpm db:migrate` to apply them.
+</Warning>
+
+### Typical development workflow
+
+```bash
+# Modify src/db/schema.ts, then push changes immediately
+pnpm db:push
+```
+
+### Typical production workflow
+
+```bash
+# After modifying schema.ts, generate a migration file
+pnpm db:generate
+
+# Review the generated SQL in src/db/migrations/, then apply it
+pnpm db:migrate
+```

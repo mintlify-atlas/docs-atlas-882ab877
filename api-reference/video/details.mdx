@@ -1,0 +1,145 @@
+---
+title: "Get video details"
+description: "Fetch metadata for a YouTube video"
+---
+
+**POST** `/v1/video/details`
+
+Returns rich metadata for a YouTube video including title, description, view/like counts, chapters, channel info, and related videos. Results are cached in Redis for 1 hour.
+
+**Authentication required** · **1 credit per request**
+
+## Request
+
+<ParamField body="videoUrl" type="string" required>
+  The YouTube video URL. Supported formats:
+  - `https://www.youtube.com/watch?v=VIDEO_ID`
+  - `https://youtu.be/VIDEO_ID`
+  - `https://www.youtube.com/shorts/VIDEO_ID`
+  - `https://www.youtube.com/embed/VIDEO_ID`
+</ParamField>
+
+## Response
+
+<ResponseField name="statusCode" type="number">200 on success</ResponseField>
+<ResponseField name="cacheStatus" type="string">`"hit"` or `"miss"`</ResponseField>
+<ResponseField name="creditUsed" type="number">Always `1`</ResponseField>
+<ResponseField name="remainingCredits" type="number">Your credit balance after this request</ResponseField>
+<ResponseField name="video" type="object">
+  <Expandable title="properties">
+    <ResponseField name="videoId" type="string">YouTube video ID</ResponseField>
+    <ResponseField name="title" type="string">Video title</ResponseField>
+    <ResponseField name="description" type="string">Full video description</ResponseField>
+    <ResponseField name="duration" type="number">Duration in seconds</ResponseField>
+    <ResponseField name="uploadDate" type="string">Upload date string</ResponseField>
+    <ResponseField name="isLiveContent" type="boolean">Whether this is a live or premiere video</ResponseField>
+    <ResponseField name="viewCount" type="number | null">Total view count</ResponseField>
+    <ResponseField name="likeCount" type="number | null">Total like count</ResponseField>
+    <ResponseField name="tags" type="string[]">Video tags</ResponseField>
+    <ResponseField name="thumbnails" type="object">
+      <Expandable title="properties">
+        <ResponseField name="best" type="string | undefined">Highest quality thumbnail URL</ResponseField>
+        <ResponseField name="min" type="string | undefined">Lowest quality thumbnail URL</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="channel" type="object | null">
+      <Expandable title="properties">
+        <ResponseField name="id" type="string">Channel ID</ResponseField>
+        <ResponseField name="name" type="string">Channel name</ResponseField>
+        <ResponseField name="handle" type="string | undefined">Channel handle (e.g. `@channelname`)</ResponseField>
+        <ResponseField name="subscriberCount" type="string | undefined">Subscriber count string</ResponseField>
+        <ResponseField name="thumbnails" type="object">`best` and `min` thumbnail URLs</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="chapters" type="array">
+      <Expandable title="chapter properties">
+        <ResponseField name="title" type="string">Chapter title</ResponseField>
+        <ResponseField name="start" type="number">Chapter start time in seconds</ResponseField>
+        <ResponseField name="thumbnails" type="object">`best` and `min` thumbnail URLs</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="relatedVideos" type="array">
+      <Expandable title="relatedVideo properties">
+        <ResponseField name="videoId" type="string">Related video ID</ResponseField>
+        <ResponseField name="title" type="string">Related video title</ResponseField>
+        <ResponseField name="duration" type="number | null">Duration in seconds</ResponseField>
+        <ResponseField name="isLive" type="boolean">Whether it is currently live</ResponseField>
+        <ResponseField name="uploadDate" type="string | undefined">Upload date</ResponseField>
+        <ResponseField name="viewCount" type="number | null">View count</ResponseField>
+        <ResponseField name="thumbnails" type="object">`best` and `min` thumbnail URLs</ResponseField>
+        <ResponseField name="channel" type="object | null">Channel `id`, `name`, `handle`, and `thumbnails`</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example
+
+<CodeGroup>
+```bash curl
+curl -X POST https://your-api.example.com/v1/video/details \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}'
+```
+
+```javascript JavaScript
+const res = await fetch("https://your-api.example.com/v1/video/details", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.STOPHY_API_KEY,
+  },
+  body: JSON.stringify({ videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }),
+});
+const data = await res.json();
+```
+
+```python Python
+import requests, os
+
+response = requests.post(
+    "https://your-api.example.com/v1/video/details",
+    headers={"x-api-key": os.environ["STOPHY_API_KEY"]},
+    json={"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+)
+data = response.json()
+```
+</CodeGroup>
+
+```json Response
+{
+  "statusCode": 200,
+  "cacheStatus": "miss",
+  "creditUsed": 1,
+  "remainingCredits": 99,
+  "video": {
+    "videoId": "dQw4w9WgXcQ",
+    "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+    "description": "The official video for \"Never Gonna Give You Up\" by Rick Astley...",
+    "duration": 213,
+    "uploadDate": "2009-10-25",
+    "isLiveContent": false,
+    "viewCount": 1400000000,
+    "likeCount": 16000000,
+    "tags": ["Rick Astley", "Never Gonna Give You Up"],
+    "thumbnails": {
+      "best": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+      "min": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg"
+    },
+    "channel": {
+      "id": "UCuAXFkgsw1L7xaCfnd5JJOw",
+      "name": "Rick Astley",
+      "handle": "@RickAstleyYT",
+      "subscriberCount": "3.8M subscribers",
+      "thumbnails": { "best": "https://...", "min": "https://..." }
+    },
+    "chapters": [],
+    "relatedVideos": []
+  }
+}
+```
+
+<Note>
+  Video details are cached in Redis for 1 hour using the key `video:details:{videoId}`. Cache hits still cost 1 credit.
+</Note>

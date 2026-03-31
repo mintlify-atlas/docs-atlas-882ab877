@@ -1,0 +1,67 @@
+---
+title: "Credits"
+description: "How Stophy credits work"
+---
+
+Every Stophy API account uses a credit balance to meter usage. Understanding how credits are counted, deducted, and protected helps you build reliable integrations.
+
+## How credits work
+
+Each successful API request costs **1 credit**. The cost is the same regardless of which endpoint you call — transcript, details, or comments.
+
+New accounts start with **100 credits**.
+
+## When credits are charged
+
+Credits are only deducted when a request **succeeds**. Requests that fail before data is returned do not consume any credits.
+
+| Scenario | Credits charged |
+| --- | --- |
+| Transcript, details, or comments returned (`200`) | 1 |
+| Cache hit — data returned from cache (`200`) | 1 |
+| Video not found (`404`) | 0 |
+| Missing or invalid API key (`401`) | 0 |
+| Invalid or unsupported video URL (`400`) | 0 |
+| Insufficient credits (`402`) | 0 |
+| Internal server error (`500`) | 0 |
+| Race condition — credits changed mid-request (`409`) | 0 |
+
+<Note>
+You are never charged for requests that return a `404`. If a video, its transcript, or its comments cannot be found, no credits are deducted.
+</Note>
+
+## Atomic deduction
+
+Credit deduction is performed as a single atomic database update. The update only proceeds when the user's current balance is at least 1 credit:
+
+```sql
+UPDATE "user"
+SET credits = credits - 1
+WHERE id = $userId AND credits >= 1
+```
+
+This prevents your balance from going below zero even under concurrent load.
+
+## Race condition (409)
+
+If two requests run at exactly the same time, one may read a sufficient balance, while the other depletes it before either update is written. When this happens, the update returns no rows and the request is rejected with a `409` response.
+
+<Warning>
+A `409` response means your credits changed while the request was being processed. No credits are charged. This can happen when multiple requests run in parallel against a low balance. Implement retry logic with a short back-off (for example, retry once after 200 ms) to handle this gracefully.
+</Warning>
+
+## Insufficient credits (402)
+
+If your balance is zero (or below the cost of the request) at the time of the check, the request is immediately rejected with a `402` response. No credits are deducted.
+
+## Activity log
+
+Every request is recorded in the activity log, regardless of outcome. Each entry includes:
+
+- The endpoint called
+- The HTTP status code returned
+- The number of credits charged (0 for failed requests, 1 for successful ones)
+- The response time in milliseconds
+- Metadata such as `videoId` and `cacheStatus`
+
+This gives you a full audit trail of your credit consumption.

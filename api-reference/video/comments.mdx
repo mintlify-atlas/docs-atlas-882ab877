@@ -1,0 +1,125 @@
+---
+title: "Get video comments"
+description: "Fetch paginated comments from a YouTube video"
+---
+
+**POST** `/v1/video/comments`
+
+Returns a page of comments for a YouTube video. Use `nextContinuationToken` from the response to fetch subsequent pages. Results are cached in Redis for 1 hour per unique `(videoId, filter)` combination.
+
+**Authentication required** · **1 credit per request**
+
+## Request
+
+<ParamField body="videoUrl" type="string" required>
+  The YouTube video URL. Supported formats:
+  - `https://www.youtube.com/watch?v=VIDEO_ID`
+  - `https://youtu.be/VIDEO_ID`
+  - `https://www.youtube.com/shorts/VIDEO_ID`
+  - `https://www.youtube.com/embed/VIDEO_ID`
+</ParamField>
+
+<ParamField body="sortBy" type="string">
+  Sort order for comments. Accepted values: `"top"` (default) or `"newest"`.
+</ParamField>
+
+<ParamField body="continuationToken" type="string">
+  Pagination token from a previous response's `pagination.nextContinuationToken`. Omit for the first page.
+</ParamField>
+
+## Response
+
+<ResponseField name="statusCode" type="number">200 on success</ResponseField>
+<ResponseField name="cacheStatus" type="string">`"hit"` or `"miss"`</ResponseField>
+<ResponseField name="creditUsed" type="number">Always `1`</ResponseField>
+<ResponseField name="remainingCredits" type="number">Your credit balance after this request</ResponseField>
+<ResponseField name="comments" type="CommentDto[]">
+  <Expandable title="CommentDto properties">
+    <ResponseField name="id" type="string">Comment ID</ResponseField>
+    <ResponseField name="content" type="string">Comment text</ResponseField>
+    <ResponseField name="publishDate" type="string">When the comment was posted</ResponseField>
+    <ResponseField name="likeCount" type="number">Number of likes</ResponseField>
+    <ResponseField name="isPinned" type="boolean">Whether the comment is pinned</ResponseField>
+    <ResponseField name="isAuthorChannelOwner" type="boolean">Whether the author owns the channel</ResponseField>
+    <ResponseField name="replyCount" type="number">Number of replies</ResponseField>
+    <ResponseField name="url" type="string">Direct URL to the comment</ResponseField>
+    <ResponseField name="author" type="object | null">
+      <Expandable title="author properties">
+        <ResponseField name="id" type="string">Author channel ID</ResponseField>
+        <ResponseField name="name" type="string">Author display name</ResponseField>
+        <ResponseField name="handle" type="string | undefined">Author handle</ResponseField>
+        <ResponseField name="thumbnails" type="object">`best` and `min` avatar URLs</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="filters" type="object">
+  <Expandable title="properties">
+    <ResponseField name="sortBy" type="string">The active sort order: `"top"` or `"newest"`</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="pagination" type="object">
+  <Expandable title="properties">
+    <ResponseField name="continuationTokenUsed" type="string | null">The continuation token used in this request</ResponseField>
+    <ResponseField name="nextContinuationToken" type="string | null">Pass this value as `continuationToken` in the next request to get the next page. `null` means no more pages.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Pagination example
+
+<CodeGroup>
+```bash Page 1
+curl -X POST https://your-api.example.com/v1/video/comments \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "sortBy": "top"}'
+```
+
+```bash Page 2
+# Use nextContinuationToken from the previous response
+curl -X POST https://your-api.example.com/v1/video/comments \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "sortBy": "top", "continuationToken": "TOKEN_FROM_PREVIOUS_RESPONSE"}'
+```
+</CodeGroup>
+
+```json Response
+{
+  "statusCode": 200,
+  "cacheStatus": "miss",
+  "creditUsed": 1,
+  "remainingCredits": 98,
+  "comments": [
+    {
+      "id": "UgxABC123",
+      "content": "This song never gets old.",
+      "publishDate": "2 years ago",
+      "likeCount": 45200,
+      "isPinned": false,
+      "isAuthorChannelOwner": false,
+      "replyCount": 312,
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&lc=UgxABC123",
+      "author": {
+        "id": "UCxxxxxx",
+        "name": "Some User",
+        "handle": "@someuser",
+        "thumbnails": { "best": "https://...", "min": "https://..." }
+      }
+    }
+  ],
+  "filters": { "sortBy": "top" },
+  "pagination": {
+    "continuationTokenUsed": null,
+    "nextContinuationToken": "EqYCCg8..."
+  }
+}
+```
+
+<Tip>
+  When `pagination.nextContinuationToken` is `null`, you have reached the last page of comments.
+</Tip>
+
+<Note>
+  Each unique combination of `(videoId, sortBy, continuationToken)` is cached separately in Redis for 1 hour.
+</Note>

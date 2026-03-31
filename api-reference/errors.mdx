@@ -1,0 +1,163 @@
+---
+title: "Error codes"
+description: "Complete reference for all Stophy API error codes and messages"
+---
+
+All Stophy API responses use a consistent JSON envelope. Error responses always include a `statusCode` and a `message`:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Video URL is required"
+}
+```
+
+The HTTP status code of the response matches the `statusCode` field in the body.
+
+<AccordionGroup>
+
+  <Accordion title="400 Bad Request">
+
+    Returned when the request is malformed or the provided `videoUrl` cannot be parsed into a valid YouTube video ID.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Video URL is required"` | The `videoUrl` field is missing from the request body |
+    | `"Invalid URL format"` | The value provided is not a parseable URL |
+    | `"Unsupported YouTube URL format"` | A `youtube.com` URL that is not `/watch?v=`, `/embed/`, or `/shorts/` |
+    | `"Invalid embed URL: missing video ID"` | A `/embed/` path with no video ID segment |
+    | `"Invalid shorts URL: missing video ID"` | A `/shorts/` path with no video ID segment |
+    | `"Invalid shortened URL: missing video ID"` | A `youtu.be` URL with no path after the slash |
+    | `"URL is not a valid YouTube link"` | The URL is valid but does not point to YouTube |
+
+    **Example — missing URL:**
+
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Video URL is required"
+    }
+    ```
+
+    **Example — non-YouTube URL:**
+
+    ```json
+    {
+      "statusCode": 400,
+      "message": "URL is not a valid YouTube link"
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="401 Unauthorized">
+
+    Returned when authentication fails. No credits are deducted on a `401` response.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Missing api-x-key header"` | Neither `api-x-key` nor `x-api-key` header is present in the request |
+    | `"Invalid API key"` | The provided key does not match any record in the database |
+
+    **Example:**
+
+    ```json
+    {
+      "statusCode": 401,
+      "message": "Missing api-x-key header"
+    }
+    ```
+
+    See [authentication](/api-reference/authentication) for details on how to pass your API key.
+
+  </Accordion>
+
+  <Accordion title="402 Payment Required">
+
+    Returned when the authenticated user does not have enough credits to fulfill the request. No credits are deducted on a `402` response.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Insufficient credits"` | The user's credit balance is less than 1 |
+
+    **Example:**
+
+    ```json
+    {
+      "statusCode": 402,
+      "message": "Insufficient credits"
+    }
+    ```
+
+    See [credits](/concepts/credits) to learn how to top up your balance.
+
+  </Accordion>
+
+  <Accordion title="404 Not Found">
+
+    Returned when a resource cannot be located.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Video not found"` | The video details could not be fetched for the given video ID |
+    | `"Video comments not found"` | Comments are not available for the given video |
+    | `"User not found for API key"` | The API key is valid but the associated user account no longer exists |
+
+    No credits are deducted on a `404` response.
+
+    **Example:**
+
+    ```json
+    {
+      "statusCode": 404,
+      "message": "Video not found"
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="409 Conflict">
+
+    Returned when a concurrent request depleted the user's credit balance between the credit check and the charge step.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Credits changed while processing request. Try again."` | A race condition caused the credit deduction to fail after the initial balance check passed |
+
+    **Example:**
+
+    ```json
+    {
+      "statusCode": 409,
+      "message": "Credits changed while processing request. Try again."
+    }
+    ```
+
+    <Tip>
+      A `409` response means the request was not fulfilled and no credits were deducted. Retry the request immediately — it will succeed if your credit balance is sufficient.
+    </Tip>
+
+  </Accordion>
+
+  <Accordion title="500 Internal Server Error">
+
+    Returned when an unhandled exception occurs during request processing.
+
+    | Message | Cause |
+    |---------|-------|
+    | `"Internal server error"` | An unexpected error occurred on the server |
+
+    **Example:**
+
+    ```json
+    {
+      "statusCode": 500,
+      "message": "Internal server error"
+    }
+    ```
+
+    No credits are deducted when a `500` is returned before the charge step. If the error occurred after charging, contact support with your request details.
+
+  </Accordion>
+
+</AccordionGroup>

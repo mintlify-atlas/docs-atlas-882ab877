@@ -1,23 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "Stophy",
+  "projectType": "api-service",
+  "projectName": "Stophy",
+  "projectDescription": "A credit-based REST API for extracting YouTube video transcripts, details, and comments with Redis caching and API key authentication.",
   "theme": "luma",
-  "colors": {
-    "primary": "#6366F1",
-    "light": "#EEF2FF",
-    "dark": "#4338CA"
-  },
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/hakiiizimana/stophy"
-    }
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/hakiiizimana/stophy"
-    }
-  },
+  "primaryColor": "#6366F1",
+  "lightColor": "#EEF2FF",
+  "darkColor": "#4338CA",
   "navigation": {
     "tabs": [
       {
@@ -71,5 +59,21 @@
         ]
       }
     ]
-  }
+  },
+  "keyFeatures": [
+    "YouTube transcript extraction with multi-language support",
+    "Video metadata retrieval (title, description, views, likes, chapters, related videos)",
+    "Paginated YouTube comments with sort-by-newest or top support",
+    "Credit-based usage billing with atomic deductions",
+    "Redis (Upstash) caching for transcripts, details, and comments",
+    "PostgreSQL persistence via Drizzle ORM with Neon serverless",
+    "API key authentication via x-api-key or api-x-key headers",
+    "Activity logging for every request"
+  ],
+  "publicApiSurface": [
+    "POST /v1/video/transcript",
+    "POST /v1/video/details",
+    "POST /v1/video/comments",
+    "GET /health"
+  ]
 }
